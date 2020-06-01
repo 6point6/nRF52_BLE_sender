@@ -1,10 +1,9 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package BLE;
 
 message adv_packet {
-    //string address = 1;
-    int32 rssi = 2;
-    int32 dataLen = 3;
-    //bytes data = 4;
+    //required bytes address = 1;
+    required int32 rssi = 2;
+    required int32 dataLen = 3;
 }

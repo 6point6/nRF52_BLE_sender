@@ -150,16 +150,15 @@ private:
 
         // prep pb object
         BLE_adv_packet BLE_adv_packet;
-        uint8_t buffer[128];
-
-        /*
-        We need to pass as first input our previously declared buffer and as second input the maximum number of bytes to write, which should be the size of our buffer. This function call will return a struct of type pb_ostream_t.
-         */
-        pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
-
+        
         // populate it with our data
         BLE_adv_packet.rssi = rssi;
         BLE_adv_packet.dataLen = event.getPayload().size();
+
+        
+        uint8_t buffer[64];
+
+        pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
 
         // encode it
         bool status = pb_encode(&stream, BLE_adv_packet_fields, &BLE_adv_packet);

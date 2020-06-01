@@ -30,8 +30,8 @@ typedef struct _BLE_adv_packet {
 
 /* Struct field encoding specification for nanopb */
 #define BLE_adv_packet_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, INT32,    rssi,              2) \
-X(a, STATIC,   SINGULAR, INT32,    dataLen,           3)
+X(a, STATIC,   REQUIRED, INT32,    rssi,              2) \
+X(a, STATIC,   REQUIRED, INT32,    dataLen,           3)
 #define BLE_adv_packet_CALLBACK NULL
 #define BLE_adv_packet_DEFAULT NULL
 
