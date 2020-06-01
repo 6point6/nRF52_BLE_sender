@@ -51,6 +51,16 @@ static EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 Serial _pc_serial(USBTX, USBRX);            // define the Serial object
 
 
+bool encode_pb_string(pb_ostream_t* stream, const pb_field_t* field, void* const* arg)
+{
+    char str[14] = "Hello world!";
+
+    if (!pb_encode_tag_for_field(stream, field))
+        return false;
+
+    return pb_encode_string(stream, (uint8_t*)str, strlen(str));
+}
+
 /*
     Inner scanner class
  */
@@ -148,19 +158,24 @@ private:
         const ble::rssi_t rssi = event.getRssi();
         ble::AdvertisingDataParser adv_data(event.getPayload());
 
-        // prep pb object
+        // prep pb object and data buffer
         BLE_adv_packet BLE_adv_packet;
+        uint8_t buffer[64];
+
+        // attach the buffer to the output stream
+        pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
         
         // populate it with our data
         BLE_adv_packet.rssi = rssi;
         BLE_adv_packet.dataLen = event.getPayload().size();
 
-        
-        uint8_t buffer[64];
+        // encode the address bytes
+        uint8_t addressBytes[Gap::ADDR_LEN] = {address[0], address[1], address[2], address[3], address[4], address[5]};
 
-        pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
+        BLE_adv_packet.address.arg = addressBytes;                  // set the value
+        BLE_adv_packet.address.funcs.encode = &encode_pb_string;    // set the encoder
 
-        // encode it
+        // encode the data, report on the status
         bool status = pb_encode(&stream, BLE_adv_packet_fields, &BLE_adv_packet);
 
         if (!status)
@@ -170,6 +185,7 @@ private:
             _pc_serial.printf("Encoded fine.\r\n");
         }
 
+        // print the encoded data to serial, with the length
         _pc_serial.printf("Message Length: %d.\r\nMessage: ", stream.bytes_written);
 
         // send it
