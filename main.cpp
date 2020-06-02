@@ -46,7 +46,8 @@
 
 #define ADDR_STRING_LEN         12      // chars in hex string address
 
-#define DEBUG                   true
+#define DEBUG                   true    // toggle debug serial printing
+
 
 // Global Objects
 static EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
@@ -129,39 +130,159 @@ private:
     void blink() {
         _alive_led = !_alive_led;
     }
+
+    // add the advertising data into the pb object
+    void add_adv_data(BLE_adv_packet *pb_adv_packet, ble::AdvertisingDataParser *adv_data) {
+        while (adv_data->hasNext()) {
+            ble::AdvertisingDataParser::element_t field = adv_data->next();
+
+            // Add Flags in
+            if(field.type == ble::adv_data_type_t::FLAGS) {
+                if(DEBUG) {
+                    _pc_serial.printf("FLAGS (len %d): \"", field.value.size());
+                    _pc_serial.printf("%d", *field.value.data());
+                    _pc_serial.printf("\"\r\n");
+                }
+
+                pb_adv_packet->has_flags = true;
+                pb_adv_packet->flags = *field.value.data();
+            }
+
+            // Print name fields
+            if(field.type == ble::adv_data_type_t::COMPLETE_LOCAL_NAME || field.type == ble::adv_data_type_t::SHORTENED_LOCAL_NAME) {
+                
+                if(DEBUG) {
+                    if(field.type == ble::adv_data_type_t::COMPLETE_LOCAL_NAME) {
+                    _pc_serial.printf("COMPLETE_LOCAL_NAME (len %d): \"", field.value.size());
+                    }
+                    else {
+                        _pc_serial.printf("SHORTENED_LOCAL_NAME (len %d): \"", field.value.size());
+                    }                
+
+                    for(int i = 0; i < field.value.size(); i++) {
+                        _pc_serial.printf("%c", field.value.data()[i]);
+                    }
+
+                    _pc_serial.printf("\"\r\n");
+                }
+
+                pb_adv_packet->has_localName = true;
+                
+                // copy bytes
+                for(int i = 0; i < field.value.size(); i++) {
+                    pb_adv_packet->localName[i] = field.value.data()[i];
+                }
+            }
+
+            // print MSD
+            if(field.type == ble::adv_data_type_t::MANUFACTURER_SPECIFIC_DATA) {
+                if(DEBUG) {
+                    _pc_serial.printf("MANUFACTURER_SPECIFIC_DATA (len %d): 0x", field.value.size());
+
+                    for(int i = 0; i < field.value.size(); i++) {
+                        _pc_serial.printf("%02x", field.value.data()[i]);
+                    }
+
+                    _pc_serial.printf("\r\n");
+                }
+
+                pb_adv_packet->has_MSD = true;
+                
+                // copy bytes
+                for(int i = 0; i < field.value.size(); i++) {
+                    pb_adv_packet->MSD[i] = field.value.data()[i];
+                }
+            }
+
+            // Print service data fields
+            else if(field.type == ble::adv_data_type_t::SERVICE_DATA || field.type == ble::adv_data_type_t::SERVICE_DATA_128BIT_ID || field.type == ble::adv_data_type_t::SERVICE_DATA_16BIT_ID) {
+                if(DEBUG) {
+                    if(field.type == ble::adv_data_type_t::SERVICE_DATA)
+                        _pc_serial.printf("SERVICE_DATA (len %d): 0x", field.value.size());
+                    else if(field.type == ble::adv_data_type_t::SERVICE_DATA)
+                        _pc_serial.printf("SERVICE_DATA (len %d): 0x", field.value.size());
+                    else if(field.type == ble::adv_data_type_t::SERVICE_DATA_128BIT_ID)
+                        _pc_serial.printf("SERVICE_DATA_128BIT_ID (len %d): 0x", field.value.size());
+                    else if(field.type == ble::adv_data_type_t::SERVICE_DATA_16BIT_ID)
+                        _pc_serial.printf("SERVICE_DATA_16BIT_ID (len %d): 0x", field.value.size());
+                    
+                    for(int i = 0; i < field.value.size(); i++) {
+                        _pc_serial.printf("%02x", field.value.data()[i]);
+                    }
+
+                    _pc_serial.printf("\r\n");
+                }
+
+                pb_adv_packet->has_serviceData = true;
+                
+                // copy bytes
+                for(int i = 0; i < field.value.size(); i++) {
+                    pb_adv_packet->serviceData[i] = field.value.data()[i];
+                }
+            }
+
+            // print service IDs
+            else if(field.type == ble::adv_data_type_t::INCOMPLETE_LIST_16BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::INCOMPLETE_LIST_32BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::INCOMPLETE_LIST_128BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::COMPLETE_LIST_16BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::COMPLETE_LIST_32BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::COMPLETE_LIST_128BIT_SERVICE_IDS) {
+                if(DEBUG) {
+                    _pc_serial.printf("SERVICE IDs (len %d): 0x", field.value.size());
+                
+                    for(int i = 0; i < field.value.size(); i++) {
+                        _pc_serial.printf("%02x", field.value.data()[i]);
+                    }
+
+                    _pc_serial.printf("\r\n");
+                }
+
+                pb_adv_packet->has_serviceID = true;
+
+                // copy bytes
+                for(int i = 0; i < field.value.size(); i++) {
+                    pb_adv_packet->serviceID[i] = field.value.data()[i];
+                }
+            }
+        }
+    }
        
     
     // Called on receipt of an advertising report
     void onAdvertisingReport(const ble::AdvertisingReportEvent &event) {
+
+        // prep pb object and data buffer
+        BLE_adv_packet pb_adv_packet = BLE_adv_packet_init_zero;
+        uint8_t buffer[128];
         
-        // get the address and RSSI from the event
+        // get the address from the event
+        // https://os.mbed.com/docs/mbed-os/v5.15/mbed-os-api-doxy/structble_1_1_advertising_report_event.html
         const ble::address_t address = event.getPeerAddress();
-        const ble::rssi_t rssi = event.getRssi();
-        ble::AdvertisingDataParser adv_data(event.getPayload());
+        const ble::peer_address_type_t address_type = event.getPeerAddressType();
+        
+        // copy the address bytes
+        for(int i = 0; i < Gap::ADDR_LEN; i++) {
+            pb_adv_packet.address[i] = address[Gap::ADDR_LEN - 1 - i];
+        }
 
         if(DEBUG) {
             _pc_serial.printf("Packet received from %02x:%02x:%02x:%02x:%02x:%02x.\r\n",
             address[5], address[4], address[3], address[2], address[1], address[0]);
         }
 
-        // prep pb object and data buffer
-        BLE_adv_packet BLE_adv_packet = BLE_adv_packet_init_zero;
-        uint8_t buffer[128];
-
         // attach the buffer to the output stream
         pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
         
-        // populate it with our data
-        BLE_adv_packet.rssi = rssi;
-        BLE_adv_packet.dataLen = event.getPayload().size();
+        // populate it with data from the event
+        pb_adv_packet.rssi = event.getRssi();;
+        pb_adv_packet.tx_power = event.getTxPower();
+        pb_adv_packet.dataLen = event.getPayload().size();
+        pb_adv_packet.scanResponse = event.getType().scan_response();
 
-        // copy the address bytes
-        for(int i = 0; i < Gap::ADDR_LEN; i++) {
-            BLE_adv_packet.address[i] = address[Gap::ADDR_LEN - 1 - i];
-        }
+        // parse the advertising payload
+        ble::AdvertisingDataParser adv_data(event.getPayload());
+
+        // populate the pb instance with the adv data
+        add_adv_data(&pb_adv_packet, &adv_data);
 
         // encode the data, report on the status
-        bool status = pb_encode(&stream, BLE_adv_packet_fields, &BLE_adv_packet);
+        bool status = pb_encode(&stream, BLE_adv_packet_fields, &pb_adv_packet);
 
         if (!status)
         {
@@ -180,9 +301,12 @@ private:
             _pc_serial.printf("%02x", buffer[i]);
         }
 
-        _pc_serial.printf("\r\n");   
+        if(DEBUG)
+            _pc_serial.printf("\r\n");
+        
+        _pc_serial.printf("\r\n");
     }    
-}; /*  /Inner scanner class */
+}; /*  End of inner scanner class */
 
 
 /** Schedule processing of events from the BLE middleware in the event queue. */
