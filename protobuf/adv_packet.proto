@@ -2,8 +2,10 @@ syntax = "proto2";
 
 package BLE;
 
+import "nanopb.proto";
+
 message adv_packet {
-    //required bytes address = 1;
+    required bytes address = 1[(nanopb).fixed_length = true, (nanopb).max_size = 6, (nanopb).max_count = 1];
     required int32 rssi = 2;
     required int32 dataLen = 3;
 }

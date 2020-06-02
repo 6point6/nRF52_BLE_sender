@@ -15,15 +15,15 @@ extern "C" {
 
 /* Struct definitions */
 typedef struct _BLE_adv_packet {
-    pb_callback_t address;
+    pb_byte_t address[6];
     int32_t rssi;
     int32_t dataLen;
 } BLE_adv_packet;
 
 
 /* Initializer values for message structs */
-#define BLE_adv_packet_init_default              {{{NULL}, NULL}, 0, 0}
-#define BLE_adv_packet_init_zero                 {{{NULL}, NULL}, 0, 0}
+#define BLE_adv_packet_init_default              {{0}, 0, 0}
+#define BLE_adv_packet_init_zero                 {{0}, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define BLE_adv_packet_address_tag               1
@@ -32,10 +32,10 @@ typedef struct _BLE_adv_packet {
 
 /* Struct field encoding specification for nanopb */
 #define BLE_adv_packet_FIELDLIST(X, a) \
-X(a, CALLBACK, REQUIRED, BYTES,    address,           1) \
+X(a, STATIC,   REQUIRED, FIXED_LENGTH_BYTES, address,           1) \
 X(a, STATIC,   REQUIRED, INT32,    rssi,              2) \
 X(a, STATIC,   REQUIRED, INT32,    dataLen,           3)
-#define BLE_adv_packet_CALLBACK pb_default_field_callback
+#define BLE_adv_packet_CALLBACK NULL
 #define BLE_adv_packet_DEFAULT NULL
 
 extern const pb_msgdesc_t BLE_adv_packet_msg;
@@ -44,7 +44,7 @@ extern const pb_msgdesc_t BLE_adv_packet_msg;
 #define BLE_adv_packet_fields &BLE_adv_packet_msg
 
 /* Maximum encoded size of messages (where known) */
-/* BLE_adv_packet_size depends on runtime parameters */
+#define BLE_adv_packet_size                      30
 
 #ifdef __cplusplus
 } /* extern "C" */

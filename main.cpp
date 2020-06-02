@@ -51,16 +51,6 @@ static EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 Serial _pc_serial(USBTX, USBRX);            // define the Serial object
 
 
-bool encode_pb_string(pb_ostream_t* stream, const pb_field_t* field, void* const* arg)
-{
-    char str[14] = "Hello world!";
-
-    if (!pb_encode_tag_for_field(stream, field))
-        return false;
-
-    return pb_encode_string(stream, (uint8_t*)str, strlen(str));
-}
-
 /*
     Inner scanner class
  */
@@ -138,15 +128,7 @@ private:
         _alive_led = !_alive_led;
     }
 
-    // Convert the provided source address into a char array in dst_address_chars
-    int get_address_as_char_array(const ble::address_t src_address, char dst_address_chars[ADDR_STRING_LEN]) {
-        for (int i = 0; i < Gap::ADDR_LEN; i++) {
-            sprintf(dst_address_chars+(i*2), "%02x", src_address[i]);
-        }
-
-        return 1;
-    }
-    
+        
     
     // Called on receipt of an advertising report
     void onAdvertisingReport(const ble::AdvertisingReportEvent &event) {
@@ -159,8 +141,8 @@ private:
         ble::AdvertisingDataParser adv_data(event.getPayload());
 
         // prep pb object and data buffer
-        BLE_adv_packet BLE_adv_packet;
-        uint8_t buffer[64];
+        BLE_adv_packet BLE_adv_packet = BLE_adv_packet_init_zero;
+        uint8_t buffer[128];
 
         // attach the buffer to the output stream
         pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
@@ -170,10 +152,12 @@ private:
         BLE_adv_packet.dataLen = event.getPayload().size();
 
         // encode the address bytes
-        uint8_t addressBytes[Gap::ADDR_LEN] = {address[0], address[1], address[2], address[3], address[4], address[5]};
-
-        BLE_adv_packet.address.arg = addressBytes;                  // set the value
-        BLE_adv_packet.address.funcs.encode = &encode_pb_string;    // set the encoder
+        BLE_adv_packet.address[0] = address[5];
+        BLE_adv_packet.address[1] = address[4];
+        BLE_adv_packet.address[2] = address[3];
+        BLE_adv_packet.address[3] = address[2];
+        BLE_adv_packet.address[4] = address[1];
+        BLE_adv_packet.address[5] = address[0];
 
         // encode the data, report on the status
         bool status = pb_encode(&stream, BLE_adv_packet_fields, &BLE_adv_packet);
