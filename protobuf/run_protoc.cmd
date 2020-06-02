@@ -1,0 +1,1 @@
+..\..\..\work\dev\protobuf\nanopb-0.4.1-windows-x86\generator-bin\protoc.exe --proto_path=..\..\..\work\dev\protobuf\nanopb-0.4.1-windows-x86\generator\proto -I ..\..\..\work\dev\protobuf\nanopb-0.4.1-windows-x86\ -I .\ --nanopb_out=. .\adv_packet.proto
