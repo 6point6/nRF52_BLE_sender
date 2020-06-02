@@ -46,6 +46,8 @@
 
 #define ADDR_STRING_LEN         12      // chars in hex string address
 
+#define DEBUG                   true
+
 // Global Objects
 static EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 Serial _pc_serial(USBTX, USBRX);            // define the Serial object
@@ -127,18 +129,20 @@ private:
     void blink() {
         _alive_led = !_alive_led;
     }
-
-        
+       
     
     // Called on receipt of an advertising report
     void onAdvertisingReport(const ble::AdvertisingReportEvent &event) {
-
-        _pc_serial.printf("Packet received.\r\n");
         
         // get the address and RSSI from the event
         const ble::address_t address = event.getPeerAddress();
         const ble::rssi_t rssi = event.getRssi();
         ble::AdvertisingDataParser adv_data(event.getPayload());
+
+        if(DEBUG) {
+            _pc_serial.printf("Packet received from %02x:%02x:%02x:%02x:%02x:%02x.\r\n",
+            address[5], address[4], address[3], address[2], address[1], address[0]);
+        }
 
         // prep pb object and data buffer
         BLE_adv_packet BLE_adv_packet = BLE_adv_packet_init_zero;
@@ -151,28 +155,27 @@ private:
         BLE_adv_packet.rssi = rssi;
         BLE_adv_packet.dataLen = event.getPayload().size();
 
-        // encode the address bytes
-        BLE_adv_packet.address[0] = address[5];
-        BLE_adv_packet.address[1] = address[4];
-        BLE_adv_packet.address[2] = address[3];
-        BLE_adv_packet.address[3] = address[2];
-        BLE_adv_packet.address[4] = address[1];
-        BLE_adv_packet.address[5] = address[0];
+        // copy the address bytes
+        for(int i = 0; i < Gap::ADDR_LEN; i++) {
+            BLE_adv_packet.address[i] = address[Gap::ADDR_LEN - 1 - i];
+        }
 
         // encode the data, report on the status
         bool status = pb_encode(&stream, BLE_adv_packet_fields, &BLE_adv_packet);
 
         if (!status)
         {
-            _pc_serial.printf("Failed to encode\r\n");
+            _pc_serial.printf("Failed to encode packet data\r\n");
         } else {
-            _pc_serial.printf("Encoded fine.\r\n");
+            if(DEBUG)
+                _pc_serial.printf("Encoded fine.\r\n");
         }
 
         // print the encoded data to serial, with the length
-        _pc_serial.printf("Message Length: %d.\r\nMessage: ", stream.bytes_written);
+        if(DEBUG)
+            _pc_serial.printf("Message Length: %d.\r\nMessage: ", stream.bytes_written);
 
-        // send it
+        // send it over serial
         for(int i = 0; i < stream.bytes_written; i++){
             _pc_serial.printf("%02x", buffer[i]);
         }
