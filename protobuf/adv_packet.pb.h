@@ -25,17 +25,25 @@ typedef struct _BLE_adv_packet {
     bool has_localName;
     char localName[31];
     bool has_MSD;
-    pb_byte_t MSD[29];
+    pb_byte_t MSD[30];
     bool has_serviceData;
-    pb_byte_t serviceData[29];
-    bool has_serviceID;
-    pb_byte_t serviceID[16];
+    pb_byte_t serviceData[30];
+    bool has_serviceData16;
+    pb_byte_t serviceData16[2];
+    bool has_serviceData128;
+    pb_byte_t serviceData128[16];
+    bool has_serviceID16;
+    pb_byte_t serviceID16[2];
+    bool has_serviceID32;
+    pb_byte_t serviceID32[4];
+    bool has_serviceID128;
+    pb_byte_t serviceID128[16];
 } BLE_adv_packet;
 
 
 /* Initializer values for message structs */
-#define BLE_adv_packet_init_default              {{0}, 0, 0, 0, 0, false, 0, false, "", false, {0}, false, {0}, false, {0}}
-#define BLE_adv_packet_init_zero                 {{0}, 0, 0, 0, 0, false, 0, false, "", false, {0}, false, {0}, false, {0}}
+#define BLE_adv_packet_init_default              {{0}, 0, 0, 0, 0, false, 0, false, "", false, {0}, false, {0}, false, {0}, false, {0}, false, {0}, false, {0}, false, {0}}
+#define BLE_adv_packet_init_zero                 {{0}, 0, 0, 0, 0, false, 0, false, "", false, {0}, false, {0}, false, {0}, false, {0}, false, {0}, false, {0}, false, {0}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define BLE_adv_packet_address_tag               1
@@ -47,7 +55,11 @@ typedef struct _BLE_adv_packet {
 #define BLE_adv_packet_localName_tag             7
 #define BLE_adv_packet_MSD_tag                   8
 #define BLE_adv_packet_serviceData_tag           9
-#define BLE_adv_packet_serviceID_tag             10
+#define BLE_adv_packet_serviceData16_tag         10
+#define BLE_adv_packet_serviceData128_tag        11
+#define BLE_adv_packet_serviceID16_tag           12
+#define BLE_adv_packet_serviceID32_tag           13
+#define BLE_adv_packet_serviceID128_tag          14
 
 /* Struct field encoding specification for nanopb */
 #define BLE_adv_packet_FIELDLIST(X, a) \
@@ -60,7 +72,11 @@ X(a, STATIC,   OPTIONAL, INT32,    flags,             6) \
 X(a, STATIC,   OPTIONAL, STRING,   localName,         7) \
 X(a, STATIC,   OPTIONAL, FIXED_LENGTH_BYTES, MSD,               8) \
 X(a, STATIC,   OPTIONAL, FIXED_LENGTH_BYTES, serviceData,       9) \
-X(a, STATIC,   OPTIONAL, FIXED_LENGTH_BYTES, serviceID,        10)
+X(a, STATIC,   OPTIONAL, FIXED_LENGTH_BYTES, serviceData16,    10) \
+X(a, STATIC,   OPTIONAL, FIXED_LENGTH_BYTES, serviceData128,   11) \
+X(a, STATIC,   OPTIONAL, FIXED_LENGTH_BYTES, serviceID16,      12) \
+X(a, STATIC,   OPTIONAL, FIXED_LENGTH_BYTES, serviceID32,      13) \
+X(a, STATIC,   OPTIONAL, FIXED_LENGTH_BYTES, serviceID128,     14)
 #define BLE_adv_packet_CALLBACK NULL
 #define BLE_adv_packet_DEFAULT NULL
 
@@ -70,7 +86,7 @@ extern const pb_msgdesc_t BLE_adv_packet_msg;
 #define BLE_adv_packet_fields &BLE_adv_packet_msg
 
 /* Maximum encoded size of messages (where known) */
-#define BLE_adv_packet_size                      166
+#define BLE_adv_packet_size                      200
 
 #ifdef __cplusplus
 } /* extern "C" */

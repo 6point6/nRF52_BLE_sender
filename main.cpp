@@ -46,7 +46,7 @@
 
 #define ADDR_STRING_LEN         12      // chars in hex string address
 
-#define DEBUG                   true    // toggle debug serial printing
+#define DEBUG                   false    // toggle debug serial printing
 
 
 // Global Objects
@@ -188,23 +188,19 @@ private:
 
                 pb_adv_packet->has_MSD = true;
                 
+                // save length as first byte
+                pb_adv_packet->MSD[0] = field.value.size();
+
                 // copy bytes
                 for(int i = 0; i < field.value.size(); i++) {
-                    pb_adv_packet->MSD[i] = field.value.data()[i];
+                    pb_adv_packet->MSD[i+1] = field.value.data()[i];
                 }
             }
 
             // Print service data fields
-            else if(field.type == ble::adv_data_type_t::SERVICE_DATA || field.type == ble::adv_data_type_t::SERVICE_DATA_128BIT_ID || field.type == ble::adv_data_type_t::SERVICE_DATA_16BIT_ID) {
+            else if(field.type == ble::adv_data_type_t::SERVICE_DATA) {
                 if(DEBUG) {
-                    if(field.type == ble::adv_data_type_t::SERVICE_DATA)
-                        _pc_serial.printf("SERVICE_DATA (len %d): 0x", field.value.size());
-                    else if(field.type == ble::adv_data_type_t::SERVICE_DATA)
-                        _pc_serial.printf("SERVICE_DATA (len %d): 0x", field.value.size());
-                    else if(field.type == ble::adv_data_type_t::SERVICE_DATA_128BIT_ID)
-                        _pc_serial.printf("SERVICE_DATA_128BIT_ID (len %d): 0x", field.value.size());
-                    else if(field.type == ble::adv_data_type_t::SERVICE_DATA_16BIT_ID)
-                        _pc_serial.printf("SERVICE_DATA_16BIT_ID (len %d): 0x", field.value.size());
+                    _pc_serial.printf("SERVICE_DATA (len %d): 0x", field.value.size());
                     
                     for(int i = 0; i < field.value.size(); i++) {
                         _pc_serial.printf("%02x", field.value.data()[i]);
@@ -214,17 +210,60 @@ private:
                 }
 
                 pb_adv_packet->has_serviceData = true;
+
+                // save length as first byte
+                pb_adv_packet->serviceData[0] = field.value.size();
                 
                 // copy bytes
                 for(int i = 0; i < field.value.size(); i++) {
-                    pb_adv_packet->serviceData[i] = field.value.data()[i];
+                    pb_adv_packet->serviceData[i+1] = field.value.data()[i];
+                }
+            }
+
+            // Print service data fields
+            else if(field.type == ble::adv_data_type_t::SERVICE_DATA_16BIT_ID) {
+                if(DEBUG) {
+                    _pc_serial.printf("SERVICE_DATA_16BIT_ID (len %d): 0x", field.value.size());
+                    
+                    for(int i = 0; i < field.value.size(); i++) {
+                        _pc_serial.printf("%02x", field.value.data()[i]);
+                    }
+
+                    _pc_serial.printf("\r\n");
+                }
+
+                pb_adv_packet->has_serviceData16 = true;
+                
+                // copy bytes
+                for(int i = 0; i < field.value.size(); i++) {
+                    pb_adv_packet->serviceData16[i] = field.value.data()[i];
+                }
+            }
+
+            // Print service data fields
+            else if(field.type == ble::adv_data_type_t::SERVICE_DATA_128BIT_ID) {
+                if(DEBUG) {
+                    _pc_serial.printf("SERVICE_DATA_16BIT_ID (len %d): 0x", field.value.size());
+                    
+                    for(int i = 0; i < field.value.size(); i++) {
+                        _pc_serial.printf("%02x", field.value.data()[i]);
+                    }
+
+                    _pc_serial.printf("\r\n");
+                }
+
+                pb_adv_packet->has_serviceData128 = true;
+                
+                // copy bytes
+                for(int i = 0; i < field.value.size(); i++) {
+                    pb_adv_packet->serviceData128[i] = field.value.data()[i];
                 }
             }
 
             // print service IDs
-            else if(field.type == ble::adv_data_type_t::INCOMPLETE_LIST_16BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::INCOMPLETE_LIST_32BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::INCOMPLETE_LIST_128BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::COMPLETE_LIST_16BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::COMPLETE_LIST_32BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::COMPLETE_LIST_128BIT_SERVICE_IDS) {
+            else if(field.type == ble::adv_data_type_t::INCOMPLETE_LIST_16BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::COMPLETE_LIST_16BIT_SERVICE_IDS) {
                 if(DEBUG) {
-                    _pc_serial.printf("SERVICE IDs (len %d): 0x", field.value.size());
+                    _pc_serial.printf("16-BIT SERVICE IDs (len %d): 0x", field.value.size());
                 
                     for(int i = 0; i < field.value.size(); i++) {
                         _pc_serial.printf("%02x", field.value.data()[i]);
@@ -233,11 +272,49 @@ private:
                     _pc_serial.printf("\r\n");
                 }
 
-                pb_adv_packet->has_serviceID = true;
+                pb_adv_packet->has_serviceID16 = true;
 
                 // copy bytes
                 for(int i = 0; i < field.value.size(); i++) {
-                    pb_adv_packet->serviceID[i] = field.value.data()[i];
+                    pb_adv_packet->serviceID16[i] = field.value.data()[i];
+                }
+            }
+
+            else if(field.type == ble::adv_data_type_t::INCOMPLETE_LIST_32BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::COMPLETE_LIST_32BIT_SERVICE_IDS) {
+                if(DEBUG) {
+                    _pc_serial.printf("32-BIT SERVICE IDs (len %d): 0x", field.value.size());
+                
+                    for(int i = 0; i < field.value.size(); i++) {
+                        _pc_serial.printf("%02x", field.value.data()[i]);
+                    }
+
+                    _pc_serial.printf("\r\n");
+                }
+
+                pb_adv_packet->has_serviceID32 = true;
+
+                // copy bytes
+                for(int i = 0; i < field.value.size(); i++) {
+                    pb_adv_packet->serviceID32[i] = field.value.data()[i];
+                }
+            }
+
+            else if(field.type == ble::adv_data_type_t::INCOMPLETE_LIST_128BIT_SERVICE_IDS || field.type == ble::adv_data_type_t::COMPLETE_LIST_128BIT_SERVICE_IDS) {
+                if(DEBUG) {
+                    _pc_serial.printf("128-BIT SERVICE IDs (len %d): 0x", field.value.size());
+                
+                    for(int i = 0; i < field.value.size(); i++) {
+                        _pc_serial.printf("%02x", field.value.data()[i]);
+                    }
+
+                    _pc_serial.printf("\r\n");
+                }
+
+                pb_adv_packet->has_serviceID128 = true;
+
+                // copy bytes
+                for(int i = 0; i < field.value.size(); i++) {
+                    pb_adv_packet->serviceID128[i] = field.value.data()[i];
                 }
             }
         }
@@ -294,7 +371,7 @@ private:
 
         // print the encoded data to serial, with the length
         if(DEBUG)
-            _pc_serial.printf("Message Length: %d.\r\nMessage: ", stream.bytes_written);
+            _pc_serial.printf("Message Length: %d.\r\nMessage:", stream.bytes_written);
 
         // send it over serial
         for(int i = 0; i < stream.bytes_written; i++){

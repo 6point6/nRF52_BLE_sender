@@ -26,9 +26,18 @@ message adv_packet {
     optional string localName = 7 [(nanopb).fixed_length = true, (nanopb).max_size = 31, (nanopb).max_count = 1];
 
     // 26 bytes in the advertising data or 29 bytes in the scan response
-    optional bytes MSD = 8 [(nanopb).fixed_length = true, (nanopb).max_size = 29, (nanopb).max_count = 1];
+    // first byte used to store length
+    optional bytes MSD = 8 [(nanopb).fixed_length = true, (nanopb).max_size = 30, (nanopb).max_count = 1];
 
-    optional bytes serviceData = 9 [(nanopb).fixed_length = true, (nanopb).max_size = 29];
+    // variable length so use first byte used to store length
+    optional bytes serviceData = 9 [(nanopb).fixed_length = true, (nanopb).max_size = 30];
 
-    optional bytes serviceID = 10 [(nanopb).fixed_length = true, (nanopb).max_size = 16];
+    // fixed length service data
+    optional bytes serviceData16 = 10 [(nanopb).fixed_length = true, (nanopb).max_size = 2];
+    optional bytes serviceData128 = 11 [(nanopb).fixed_length = true, (nanopb).max_size = 16];
+
+    // fixed length service IDs
+    optional bytes serviceID16 = 12 [(nanopb).fixed_length = true, (nanopb).max_size = 2];
+    optional bytes serviceID32 = 13 [(nanopb).fixed_length = true, (nanopb).max_size = 4];
+    optional bytes serviceID128 = 14 [(nanopb).fixed_length = true, (nanopb).max_size = 16];
 }
